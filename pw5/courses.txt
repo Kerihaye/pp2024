@@ -1,0 +1,2 @@
+CS101, Introduction to Computer Science, 3
+MATH202, Calculus II, 4
