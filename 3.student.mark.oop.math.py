@@ -1,111 +1,124 @@
+import curses
 import math
 import numpy as np
-import curses
 
-class Person:
-    def __init__(self, id, name, date_of_birth):
-        self.id = id
-        self.name = name
-        self.date_of_birth = date_of_birth
-
-    def display(self):
-        raise NotImplementedError("Subclass must implement this method")
-
-class Student(Person):
-    def __init__(self, student_id, name, date_of_birth):
-        super().__init__(student_id, name, date_of_birth)
-        self.marks = {}
-        self.credits = {}
-
-    def add_mark(self, course, mark, credit):
-        self.marks[course] = math.floor(mark)
-        self.credits[course] = credit
-
-    def calculate_gpa(self):
-        marks = np.array(list(self.marks.values()))
-        credits = np.array(list(self.credits.values()))
-        return np.average(marks, weights=credits)
-
-    def display(self):
-        return f"ID: {self.id}, Name: {self.name}, GPA: {self.calculate_gpa()}"
-
-class Course:
-    def __init__(self, course_id, name, credit):
-        self.course_id = course_id
-        self.name = name
-        self.credit = credit
-
-class School:
-    def __init__(self):
-        self.students = []
+class Student:
+    def __init__(self, student_id, student_name, student_dob):
+        self.student_id = student_id
+        self.student_name = student_name
+        self.student_dob = student_dob
         self.courses = []
-
-    def add_student(self, student):
-        if not isinstance(student, Student):
-            raise ValueError("Invalid student")
-        self.students.append(student)
 
     def add_course(self, course):
         self.courses.append(course)
 
+    def __str__(self):
+        return f"Student ID: {self.student_id}, Name: {self.student_name}, Date of Birth: {self.student_dob}"
+
+class Course:
+    def __init__(self, course_id, course_name, credits):
+        self.course_id = course_id
+        self.course_name = course_name
+        self.credits = credits
+
+    def __str__(self):
+        return f"Course ID: {self.course_id}, Name: {self.course_name}, Credits: {self.credits}"
+
+class Mark:
+    def __init__(self, student, course, mark=None):
+        self.student = student
+        self.course = course
+        self.mark = mark
+
+    def __str__(self):
+        return f"Student ID: {self.student.student_id}, Course ID: {self.course.course_id}, Mark: {self.mark:.1f}"
+
+class StudentManagement:
+    def __init__(self):
+        self.students = []
+        self.courses = []
+        self.marks = []
+
+    def input_student_info(self):
+        student_id = input("Student ID: ")
+        student_name = input("Name: ")
+        student_dob = input("Date of birth (example: dd/mm/yyyy): ")
+        return Student(student_id, student_name, student_dob)
+
+    def input_course_info(self):
+        course_id = input("Course ID: ")
+        course_name = input("Name of the course: ")
+        credits = int(input("Credits for the course: "))
+        return Course(course_id, course_name, credits)
+
+    def input_marks(self, student, course):
+        mark = float(input(f"Enter the mark for student {student.student_id} in course {course.course_id}: "))
+        return Mark(student, course, math.floor(mark * 10) / 10)  # Round down to 1 decimal place
+
+    def calculate_gpa(self, student):
+        total_credits = 0
+        weighted_sum = 0
+        for mark in self.marks:
+            if mark.student == student:
+                total_credits += mark.course.credits
+                weighted_sum += mark.course.credits * mark.mark
+        return weighted_sum / total_credits if total_credits > 0 else 0
+
     def list_students(self):
-        self.students.sort(key=lambda student: student.calculate_gpa(), reverse=True)
         for student in self.students:
-            print(student.display())
+            print(student)
 
     def list_courses(self):
         for course in self.courses:
-            print(f"ID: {course.course_id}, Name: {course.name}")
+            print(course)
 
     def list_marks(self):
-        for student in self.students:
-            for course, mark in student.marks.items():
-                print(f"Student ID: {student.id}, Course ID: {course.course_id}, Mark: {mark}")
-
-def main():
-    stdscr = curses.initscr()
-    school = School()
-    while True:
-        stdscr.addstr("1. Input student info\n")
-        stdscr.addstr("2. Input course info\n")
-        stdscr.addstr("3. Input mark\n")
-        stdscr.addstr("4. List students\n")
-        stdscr.addstr("5. List courses\n")
-        stdscr.addstr("6. List marks\n")
-        stdscr.addstr("7. Exit\n")
-        stdscr.refresh()
-        option = int(stdscr.getstr().decode())
-        if option == 1:
-            student_id = input("Student ID: ")
-            name = input("Name: ")
-            date_of_birth = input("Date of birth (example: dd/mm/yyyy): ")
-            student = Student(student_id, name, date_of_birth)
-            school.add_student(student)
-        elif option == 2:
-            course_id = input("Course ID: ")
-            name = input("Name of the course: ")
-            credit = int(input("Credit of the course: "))
-            course = Course(course_id, name, credit)
-            school.add_course(course)
-        elif option == 3:
-            student_id = input("Student ID: ")
-            course_id = input("Course ID: ")
-            mark = float(input("Mark: "))
-            student = school.get_student(student_id)
-            course = school.get_course(course_id)
-            if student and course:
-                student.add_mark(course, mark, course.credit)
-        elif option == 4:
-            school.list_students()
-        elif option == 5:
-            school.list_courses()
-        elif option == 6:
-            school.list_marks()
-        elif option == 7:
-            break
+        student_id = input("Enter student ID: ")
+        course_id = input("Enter course ID: ")
+        for mark in self.marks:
+            if mark.student.student_id == student_id and mark.course.course_id == course_id:
+                print(mark)
+                break
         else:
-            print("No option valid. Try again")
-    curses.endwin()
+            print("No marks found for the specified student and course.")
+
+    def list_students_by_gpa(self):
+        sorted_students = sorted(self.students, key=self.calculate_gpa, reverse=True)
+        for student in sorted_students:
+            print(f"{student} - GPA: {self.calculate_gpa(student):.2f}")
+
+    def main(self):
+        while True:
+            print("1. Input student info")
+            print("2. List students")
+            print("3. List courses")
+            print("4. List marks")
+            print("5. List students by GPA")
+            print("6. Exit")
+            option = int(input("Select an option: "))
+
+            if option == 1:
+                student = self.input_student_info()
+                self.students.append(student)
+                num_courses = int(input("Number of courses: "))
+                for _ in range(num_courses):
+                    course = self.input_course_info()
+                    self.courses.append(course)
+                    mark = self.input_marks(student, course)
+                    self.marks.append(mark)
+            elif option == 2:
+                self.list_students()
+            elif option == 3:
+                self.list_courses()
+            elif option == 4:
+                self.list_marks()
+            elif option == 5:
+                self.list_students_by_gpa()
+            elif option == 6:
+                break
+            else:
+                print("Invalid option. Try again.")
 
 if __name__ == "__main__":
-    main()
+    student_management = StudentManagement()
+    student_management.main()
