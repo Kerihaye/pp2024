@@ -1,40 +1,68 @@
-from input import get_student_info, get_course_info, get_mark_info
-from output import init_screen, print_menu, end_screen
 from domains.student import Student
 from domains.course import Course
-from domains.school import School
+from domains.mark import Mark
+import input as input_module
+import output
 
-def main():
-    stdscr = init_screen()
-    school = School()
-    while True:
-        print_menu(stdscr)
-        option = int(stdscr.getstr().decode())
-        if option == 1:
-            student_id, name, date_of_birth = get_student_info()
-            student = Student(student_id, name, date_of_birth)
-            school.add_student(student)
-        elif option == 2:
-            course_id, name, credit = get_course_info()
-            course = Course(course_id, name, credit)
-            school.add_course(course)
-        elif option == 3:
-            student_id, course_id, mark = get_mark_info()
-            student = school.get_student(student_id)
-            course = school.get_course(course_id)
-            if student and course:
-                student.add_mark(course, mark, course.credit)
-        elif option == 4:
-            school.list_students()
-        elif option == 5:
-            school.list_courses()
-        elif option == 6:
-            school.list_marks()
-        elif option == 7:
-            break
+class StudentManagementSystem:
+    def __init__(self):
+        self.students = []
+        self.courses = []
+        self.marks = []
+
+    def add_student(self):
+        student = input_module.input_student_info()
+        self.students.append(student)
+
+    def add_course(self):
+        course = input_module.input_course_info()
+        self.courses.append(course)
+
+    def enter_marks(self):
+        student_id = input("Enter student ID for mark entry: ")
+        course_id = input("Enter course ID for mark entry: ")
+        student = next((s for s in self.students if s.student_id == student_id), None)
+        course = next((c for c in self.courses if c.course_id == course_id), None)
+        if student and course:
+            mark = input_module.input_marks(student, course)
+            self.marks.append(mark)
         else:
-            print("No option valid. Try again")
-    end_screen()
+            print("Invalid student or course ID.")
+
+    def list_students(self):
+        for student in self.students:
+            output.print_student(student)
+
+    def list_courses(self):
+        for course in self.courses:
+            output.print_course(course)
+
+    def list_marks(self):
+        for mark in self.marks:
+            output.print_mark(mark)
+
+    def run(self):
+        while True:
+            print("\n1. Add Student\n2. Add Course\n3. Enter Marks\n4. List Students\n5. List Courses\n6. List Marks\n7. Exit")
+            choice = input("Select an option: ")
+            if choice == '1':
+                self.add_student()
+            elif choice == '2':
+                self.add_course()
+            elif choice == '3':
+                self.enter_marks()
+            elif choice == '4':
+                self.list_students()
+            elif choice == '5':
+                self.list_courses()
+            elif choice == '6':
+                self.list_marks()
+            elif choice == '7':
+                print("Exiting...")
+                break
+            else:
+                print("Invalid option, please try again.")
 
 if __name__ == "__main__":
-    main()
+    sms = StudentManagementSystem()
+    sms.run()
