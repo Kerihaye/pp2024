@@ -1,0 +1,3 @@
+CS101,Lap trinh Python,4
+CS102,Toan cao cap,3
+CS103,Vat ly dai cuong,3
